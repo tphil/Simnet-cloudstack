@@ -1,0 +1,16 @@
+# Database-like write pattern: 8K random writes, fsync every write.
+# Run inside a guest against a data disk: fio db-write.fio --filename=/dev/vdb
+[global]
+ioengine=libaio
+direct=1
+runtime=120
+time_based=1
+group_reporting=1
+percentile_list=50:95:99:99.9
+
+[db-write]
+rw=randwrite
+bs=8k
+iodepth=1
+numjobs=4
+fsync=1

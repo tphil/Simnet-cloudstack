@@ -1,0 +1,15 @@
+---
+# Pure FlashArray iSCSI portal IPs (one per array iSCSI interface).
+# Override in inventory or group_vars.
+pure_iscsi_portals: []
+#  - 10.10.20.11
+#  - 10.10.20.12
+#  - 10.10.20.13
+#  - 10.10.20.14
+
+# Where cloudstack-agent installs the multipath helper scripts.
+cloudstack_multipath_scripts_dir: /usr/share/cloudstack-common/scripts/storage/multipath
+
+# Scripts from this repo that replace the upstream ones.
+cloudstack_patched_scripts:
+  - connectVolume.sh

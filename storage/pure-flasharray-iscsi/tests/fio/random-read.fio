@@ -1,0 +1,14 @@
+# 4K random read IOPS.
+[global]
+ioengine=libaio
+direct=1
+runtime=120
+time_based=1
+group_reporting=1
+percentile_list=50:95:99:99.9
+
+[random-read]
+rw=randread
+bs=4k
+iodepth=32
+numjobs=4

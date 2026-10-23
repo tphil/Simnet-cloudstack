@@ -1,0 +1,10 @@
+---
+# Prepare KVM hosts for Pure FlashArray over iSCSI and install the patched
+# CloudStack multipath scripts.
+#
+#   ansible-playbook -i inventory.ini playbook.yml --limit lab
+#
+- hosts: kvm_hosts
+  become: true
+  roles:
+    - pure_iscsi_host

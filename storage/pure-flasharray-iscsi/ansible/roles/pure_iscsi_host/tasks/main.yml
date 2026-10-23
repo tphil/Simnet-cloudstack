@@ -1,0 +1,88 @@
+---
+- name: Install iSCSI and multipath packages (Debian/Ubuntu)
+  ansible.builtin.apt:
+    name: [open-iscsi, multipath-tools, lsscsi, sg3-utils]
+    state: present
+    update_cache: true
+  when: ansible_os_family == "Debian"
+
+- name: Install iSCSI and multipath packages (RHEL family)
+  ansible.builtin.dnf:
+    name: [iscsi-initiator-utils, device-mapper-multipath, lsscsi, sg3_utils]
+    state: present
+  when: ansible_os_family == "RedHat"
+
+- name: Deploy multipath.conf
+  ansible.builtin.copy:
+    src: "{{ role_path }}/../../../config/multipath.conf"
+    dest: /etc/multipath.conf
+    mode: "0644"
+  notify: restart multipathd
+
+- name: Deploy iscsid.conf
+  ansible.builtin.copy:
+    src: "{{ role_path }}/../../../config/iscsid.conf"
+    dest: /etc/iscsi/iscsid.conf
+    mode: "0600"
+  notify: restart iscsid
+
+- name: Deploy Pure udev rules
+  ansible.builtin.copy:
+    src: "{{ role_path }}/../../../config/99-pure-storage.rules"
+    dest: /etc/udev/rules.d/99-pure-storage.rules
+    mode: "0644"
+  notify: reload udev
+
+- name: Enable and start multipathd and iscsid
+  ansible.builtin.systemd:
+    name: "{{ item }}"
+    enabled: true
+    state: started
+  loop: [multipathd, iscsid]
+
+- name: Read initiator IQN
+  ansible.builtin.command: awk -F= '/^InitiatorName=/{print $2}' /etc/iscsi/initiatorname.iscsi
+  register: initiator_iqn
+  changed_when: false
+
+- name: Show initiator IQN (create the Pure host object with this value)
+  ansible.builtin.debug:
+    msg: "{{ inventory_hostname }} IQN: {{ initiator_iqn.stdout }}"
+
+- name: Discover targets on each Pure portal
+  ansible.builtin.command: iscsiadm -m discovery -t sendtargets -p {{ item }}
+  loop: "{{ pure_iscsi_portals }}"
+  register: discovery
+  changed_when: false
+
+- name: Log in to all discovered targets
+  ansible.builtin.command: iscsiadm -m node --loginall=automatic
+  register: login
+  changed_when: "'successful' in login.stdout"
+  failed_when: login.rc not in [0, 15]   # 15 = already logged in
+
+- name: Back up upstream scripts once
+  ansible.builtin.copy:
+    src: "{{ cloudstack_multipath_scripts_dir }}/{{ item }}"
+    dest: "{{ cloudstack_multipath_scripts_dir }}/{{ item }}.upstream"
+    remote_src: true
+    force: false
+    mode: "0755"
+  loop: "{{ cloudstack_patched_scripts }}"
+
+- name: Deploy patched CloudStack multipath scripts
+  ansible.builtin.copy:
+    src: "{{ role_path }}/../../../scripts/{{ item }}"
+    dest: "{{ cloudstack_multipath_scripts_dir }}/{{ item }}"
+    mode: "0755"
+  loop: "{{ cloudstack_patched_scripts }}"
+
+- name: Verify iSCSI sessions are up
+  ansible.builtin.command: iscsiadm -m session
+  register: sessions
+  changed_when: false
+  failed_when: sessions.rc != 0 or (sessions.stdout_lines | length) < (pure_iscsi_portals | length)
+
+- name: Report sessions
+  ansible.builtin.debug:
+    msg: "{{ sessions.stdout_lines }}"

@@ -1,0 +1,13 @@
+# Run in a second VM on the same pool while db-write.fio runs in the first.
+[global]
+ioengine=libaio
+direct=1
+runtime=180
+time_based=1
+
+[noisy]
+rw=randrw
+rwmixread=30
+bs=64k
+iodepth=64
+numjobs=8

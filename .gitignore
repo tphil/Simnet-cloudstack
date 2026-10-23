@@ -1,0 +1,6 @@
+.DS_Store
+*.retry
+ansible/inventory.ini
+**/inventory.ini
+*.log
+.agents/
