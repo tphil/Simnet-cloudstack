@@ -3,6 +3,11 @@
 CloudStack customizations, plugins and operational tooling for the Simnet platform.
 Everything that changes how our CloudStack behaves and does not ship with upstream lives here.
 
+## Start here
+
+Installing the Pure FlashArray iSCSI tier on staging:
+[docs/runbooks/pure-flasharray-iscsi-setup.md](docs/runbooks/pure-flasharray-iscsi-setup.md)
+
 ## Layout
 
 | Path | What |
